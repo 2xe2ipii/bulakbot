@@ -13,13 +13,11 @@ export const OrderSchema = z.object({
   deliveredTo: z.string().min(1, "Recipient Name is required"),
   orderedBy: z.string().min(1, "Customer Name is required"),
   
-  // FIX: Keep as string to preserve '09' prefix
   contactNumber: z.string().min(11, "Mobile number must be 11 digits").regex(/^09\d{9}$/, "Must start with 09"),
   
   address: z.string().optional(),
   cardMessage: z.string().optional(),
   
-  // FIX: EXACT CSV MAPPING (10 Flowers)
   flowers: z.object({
     localRed: z.number().int().min(0).default(0),
     localPink: z.number().int().min(0).default(0),
@@ -33,15 +31,17 @@ export const OrderSchema = z.object({
     stargazer: z.number().int().min(0).default(0),
   }),
   
-  // FIX: Added back these fields
   code: z.string().default(""),
   others: z.string().default(""),
   orderSummary: z.string().default(""),
   
   notes: z.string().default(""),
   deliveryFee: z.number().min(0).default(0),
+  
+  // Financials
   total: z.number().min(0, "Total must be positive"),
-  amountPaid: z.number().min(0).default(0),
+  balance: z.number().default(0), // NEW: User types this
+  amountPaid: z.number().default(0), // Calculated hidden field
 });
 
 export type OrderFormValues = z.infer<typeof OrderSchema>;

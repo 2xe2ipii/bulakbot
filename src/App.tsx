@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm, type SubmitHandler, type DefaultValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, ScanLine, ChevronDown, ChevronUp, Send } from 'lucide-react';
-// REMOVED unused imports: format, addDays
+import { Loader2, ScanLine, ChevronDown, ChevronUp, Send, Bike, Store } from 'lucide-react';
 
 import { OrderSchema, type OrderFormValues } from './lib/schema';
 import { parseOrderText } from './lib/parser';
@@ -16,7 +15,6 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
 
-  // Set default date to Feb 14
   const defaultDate = new Date('2026-02-14T00:00:00');
 
   const defaultValues: DefaultValues<OrderFormValues> = {
@@ -27,12 +25,11 @@ function App() {
     deliveredTo: '', orderedBy: '', contactNumber: '', address: '', cardMessage: '',
     code: '', others: '', orderSummary: '', notes: '',
     deliveryTime: '', 
-    // CORRECT FLOWERS (10)
     flowers: { 
       localRed: 0, localPink: 0, localWhite: 0, importedRed: 0, twoTonePink: 0,
       chinaPink: 0, sunflower: 0, carnation: 0, tulips: 0, stargazer: 0 
     },
-    amountPaid: 0, deliveryFee: 0, total: 0,
+    total: 0, balance: 0, amountPaid: 0, deliveryFee: 0
   };
 
   const form = useForm<OrderFormValues>({
@@ -42,49 +39,54 @@ function App() {
 
   const { register, handleSubmit, setValue, watch, reset, getValues, formState: { errors } } = form;
   
-  const total = watch("total");
+  // Watch inputs to auto-calculate Total
   const amountPaid = watch("amountPaid");
+  const balance = watch("balance"); 
+  
   const targetDate = watch("targetDate");
   const deliveryTime = watch("deliveryTime");
+  const orderType = watch("type");
+  const isPickUp = orderType === 'PICK UP';
 
-  // FIX: ROBUST PAYMENT LOGIC
+  // --- AUTOMATIC CALCULATION & STATUS ---
   useEffect(() => {
-    // Cast to Number to be 100% sure we aren't doing string math
-    const t = Number(getValues('total')) || 0;
     const p = Number(getValues('amountPaid')) || 0;
-    const balance = t - p;
-
-    let newStatus = 'UNPAID';
+    const b = Number(getValues('balance')) || 0;
     
-    // Exact match = PAID
-    if (balance <= 0 && t > 0) {
-      newStatus = 'PAID';
-    } 
-    // Partial payment = DOWNPAYMENT
-    else if (p > 0 && p < t) {
-      newStatus = 'DOWNPAYMENT';
-    } 
-    // No payment or full balance = UNPAID
-    else {
-      newStatus = 'UNPAID';
+    // Total is simply the sum of what was paid + what is left
+    const newTotal = p + b;
+    
+    // Update the hidden 'total' field for submission
+    if (getValues('total') !== newTotal) {
+        setValue('total', newTotal);
     }
+
+    // Determine Status
+    let newStatus = 'UNPAID';
+    if (b === 0 && p > 0) newStatus = 'PAID';
+    else if (p > 0 && b > 0) newStatus = 'DOWNPAYMENT';
+    else if (p === 0 && b > 0) newStatus = 'UNPAID';
+    // Edge case: Both 0 (New form) -> UNPAID
     
-    // Only update if changed to avoid loops
     if (getValues('status') !== newStatus) {
       setValue('status', newStatus as any);
     }
-  }, [total, amountPaid, setValue, getValues]);
+  }, [amountPaid, balance, setValue, getValues]);
 
   const onParse = () => {
     if (!parseText) return;
     const parsedData = parseOrderText(parseText);
+    
     (Object.keys(parsedData) as Array<keyof OrderFormValues>).forEach((key) => {
-       // @ts-ignore
-       setValue(key, parsedData[key]);
+       const value = parsedData[key];
+       if (value !== undefined && value !== null) {
+          // @ts-ignore
+          setValue(key, value, { shouldValidate: true, shouldDirty: true });
+       }
     });
-    // Check strict numeric values for inventory trigger
-    const hasFlowerCounts = Object.values(parsedData.flowers || {}).some(v => v > 0);
-    if (hasFlowerCounts) setShowInventory(true);
+    
+    const hasFlowers = Object.values(parsedData.flowers || {}).some(v => v > 0);
+    if (hasFlowers) setShowInventory(true);
     
     setIsParsing(false);
     setParseText("");
@@ -93,6 +95,8 @@ function App() {
   const onSubmit: SubmitHandler<OrderFormValues> = async (data) => {
     setIsSubmitting(true);
     try {
+      // Final sanity check on Total
+      data.total = data.amountPaid + data.balance;
       await submitOrderToSheet(data);
       if(confirm("Submitted! Clear?")) reset();
     } catch (error) {
@@ -102,7 +106,11 @@ function App() {
     }
   };
 
-  const setQuickTime = (hour: number) => setValue('deliveryTime', `${hour}:00`);
+  const setQuickTime = (hour: number) => {
+    const hStr = hour.toString().padStart(2, '0');
+    setValue('deliveryTime', `${hStr}:00`);
+  };
+
   const setExactDate = (day: number) => setValue('targetDate', new Date(`2026-02-${day}T00:00:00`));
 
   return (
@@ -142,9 +150,46 @@ function App() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           
-          {/* CARD 1: DATE & TIME */}
+          {/* ORDER TYPE SELECTOR */}
+          <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-200">
+             <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setValue('type', 'DELIVERY')}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 py-4 rounded-xl border-2 font-black transition-all",
+                    !isPickUp 
+                      ? "border-pink-600 bg-pink-600 text-white shadow-lg shadow-pink-200" 
+                      : "border-transparent bg-gray-50 text-gray-400 hover:bg-gray-100"
+                  )}
+                >
+                  <Bike size={28} /> 
+                  <span className="text-sm">DELIVERY</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setValue('type', 'PICK UP');
+                    setValue('deliveryFee', 0); 
+                  }}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 py-4 rounded-xl border-2 font-black transition-all",
+                    isPickUp 
+                      ? "border-pink-600 bg-pink-600 text-white shadow-lg shadow-pink-200" 
+                      : "border-transparent bg-gray-50 text-gray-400 hover:bg-gray-100"
+                  )}
+                >
+                  <Store size={28} /> 
+                  <span className="text-sm">PICK UP</span>
+                </button>
+             </div>
+          </div>
+
+          {/* SECTION 1: DATE & TIME */}
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
-            <h2 className="text-xs font-black uppercase tracking-widest text-pink-600">When is this needed?</h2>
+            <h2 className="text-xs font-black uppercase tracking-widest text-pink-600">
+              {isPickUp ? "Pick Up Schedule" : "Delivery Schedule"}
+            </h2>
             
             <div className="grid grid-cols-3 gap-2">
               {[13, 14, 15].map(day => {
@@ -169,10 +214,13 @@ function App() {
             </div>
 
             <div>
-              <label className="text-sm font-bold text-gray-700 uppercase tracking-tight mb-2 block">Delivery Time</label>
+              <label className="text-sm font-bold text-gray-700 uppercase tracking-tight mb-2 block">
+                 {isPickUp ? "Pick Up Time" : "Delivery Time"}
+              </label>
               <div className="grid grid-cols-4 gap-2 mb-3">
                 {[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17].map(h => {
-                  const val = `${h}:00`;
+                  const hStr = h.toString().padStart(2, '0');
+                  const val = `${hStr}:00`;
                   const isSelected = deliveryTime === val;
                   const display = h > 12 ? h - 12 : h;
                   return (
@@ -198,58 +246,39 @@ function App() {
             </div>
           </div>
 
-          {/* CARD 2: WHO & WHERE */}
+          {/* SECTION 2: DETAILS */}
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
-            <h2 className="text-xs font-black uppercase tracking-widest text-pink-600">Details</h2>
+            <h2 className="text-xs font-black uppercase tracking-widest text-pink-600">Contact Details</h2>
             
-            <FormSelect label="Type" name="type" register={register} errors={errors} options={[{label: 'DELIVERY', value: 'DELIVERY'}, {label: 'PICK UP', value: 'PICK UP'}]} />
-            <FormInput label="Ordered By" name="orderedBy" register={register} errors={errors} />
+            <FormInput 
+              label={isPickUp ? "Pick Up By" : "Delivered To"} 
+              name="deliveredTo" 
+              register={register} errors={errors} 
+            />
             
-            {/* FIX: Use type="text" to allow leading zeros like "09..." */}
             <FormInput label="Contact #" name="contactNumber" register={register} errors={errors} type="text" placeholder="09xxxxxxxxx" />
+            <FormInput label="Ordered By" name="orderedBy" register={register} errors={errors} />
+
+            {!isPickUp && (
+              <FormInput label="Address" name="address" type="textarea" register={register} errors={errors} />
+            )}
             
-            <FormInput label="Delivered To" name="deliveredTo" register={register} errors={errors} />
-            <FormInput label="Address" name="address" type="textarea" register={register} errors={errors} />
             <FormInput label="Card Message" name="cardMessage" type="textarea" register={register} errors={errors} />
           </div>
 
-          {/* CARD 3: PAYMENT */}
+          {/* SECTION 3: ORDER SPECS */}
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
-             <div className="flex justify-between items-center">
-                <h2 className="text-xs font-black uppercase tracking-widest text-pink-600">Payment</h2>
-                <div className={cn("px-2 py-1 rounded text-xs font-bold", getValues('status') === 'PAID' ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
-                  {watch('status')}
-                </div>
-             </div>
+            <h2 className="text-xs font-black uppercase tracking-widest text-pink-600">Order Details</h2>
 
+            <FormInput label="Order Summary" name="orderSummary" register={register} errors={errors} placeholder="e.g. 1 Dozen Red Roses" />
             <div className="grid grid-cols-2 gap-3">
-              <FormSelect 
-                label="MOP" name="mop" register={register} errors={errors} 
-                options={[{label: 'G-CASH', value: 'G-CASH'}, {label: 'CASH', value: 'CASH'}, {label: 'MAYA', value: 'MAYA'}, {label: 'BANK', value: 'BANK'}, {label: 'OTHER', value: 'OTHER'}]} 
-              />
-              <FormInput label="Order Summary" name="orderSummary" register={register} errors={errors} placeholder="Bouquet type..." />
+               <FormInput label="Code" name="code" register={register} errors={errors} placeholder="e.g. R01" />
+               <FormInput label="Others" name="others" register={register} errors={errors} placeholder="Add-ons..." />
             </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-2">
-               <FormInput label="Total" name="total" type="number" step="0.01" register={register} errors={errors} className="font-bold text-lg" />
-               <FormInput label="Paid So Far" name="amountPaid" type="number" step="0.01" register={register} errors={errors} />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3">
-               <FormInput label="Del. Fee" name="deliveryFee" type="number" step="0.01" register={register} errors={errors} />
-               <FormInput label="Code" name="code" register={register} errors={errors} />
-            </div>
-            
-            <FormInput label="Others (Add-ons)" name="others" register={register} errors={errors} />
-             
-             {/* Balance */}
-             <div className="mt-2 p-3 bg-gray-900 rounded-xl flex justify-between items-center text-white">
-                <span className="text-xs font-bold uppercase text-gray-400">Balance</span>
-                <span className="text-xl font-black">{formatCurrency((Number(total) || 0) - (Number(amountPaid) || 0))}</span>
-             </div>
+            <FormInput label="Internal Notes" name="notes" type="textarea" register={register} errors={errors} />
           </div>
 
-          {/* CARD 4: INVENTORY */}
+          {/* SECTION 4: INVENTORY */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <button 
               type="button" 
@@ -261,7 +290,7 @@ function App() {
             </button>
             
             {showInventory && (
-              <div className="p-5 grid grid-cols-2 gap-3">
+              <div className="p-5 grid grid-cols-2 gap-3 bg-white border-t border-gray-100">
                 <FormInput label="Local Red" name="flowers.localRed" type="number" register={register} errors={errors} />
                 <FormInput label="Local Pink" name="flowers.localPink" type="number" register={register} errors={errors} />
                 <FormInput label="Local White" name="flowers.localWhite" type="number" register={register} errors={errors} />
@@ -275,8 +304,39 @@ function App() {
               </div>
             )}
           </div>
-          
-          <FormInput label="Internal Notes" name="notes" type="textarea" register={register} errors={errors} />
+
+          {/* SECTION 5: PAYMENT (Updated to match your design) */}
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+             <div className="flex justify-between items-center">
+                <h2 className="text-xs font-black uppercase tracking-widest text-pink-600">Payment</h2>
+                <div className={cn("px-2 py-1 rounded text-xs font-bold", getValues('status') === 'PAID' ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                  {watch('status')}
+                </div>
+             </div>
+
+            <FormSelect 
+              label="MOP" name="mop" register={register} errors={errors} 
+              options={[{label: 'G-CASH', value: 'G-CASH'}, {label: 'CASH', value: 'CASH'}, {label: 'MAYA', value: 'MAYA'}, {label: 'BANK', value: 'BANK'}, {label: 'OTHER', value: 'OTHER'}]} 
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+               {/* FIX: User enters Payment Sent (Amount Paid) */}
+               <FormInput label="Payment Sent" name="amountPaid" type="number" step="0.01" register={register} errors={errors} />
+               
+               {/* FIX: User enters Balance */}
+               <FormInput label="Balance" name="balance" type="number" step="0.01" register={register} errors={errors} />
+            </div>
+            
+            {!isPickUp && (
+              <FormInput label="Del. Fee" name="deliveryFee" type="number" step="0.01" register={register} errors={errors} />
+            )}
+             
+             {/* Total Display (Calculated) */}
+             <div className="mt-2 p-4 bg-gray-900 rounded-xl flex justify-between items-center text-white">
+                <span className="text-sm font-bold uppercase text-gray-400">Total</span>
+                <span className="text-2xl font-black">{formatCurrency(Number(amountPaid) + Number(balance))}</span>
+             </div>
+          </div>
 
           {/* FOOTER */}
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-200 z-40">
