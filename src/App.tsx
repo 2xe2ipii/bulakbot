@@ -7,7 +7,6 @@ import { OrderSchema, type OrderFormValues } from './lib/schema';
 import { submitOrderToSheet } from './lib/gas';
 import { cn, formatCurrency } from './lib/utils';
 
-// --- NEW IMPORTS ---
 import { FormInput, FormSelect } from './components/ui/FormFields';
 import { DateSelector } from './components/DateSelector';
 import { ParsingDrawer } from './components/ParsingDrawer';
@@ -73,15 +72,8 @@ function App() {
       <div className="min-h-screen bg-gray-50 pb-32 font-sans text-gray-900">
         
         {/* HEADER */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 py-3 flex justify-between items-center shadow-sm">
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 py-4 flex justify-center items-center shadow-sm">
           <h1 className="text-xl font-black text-pink-600 tracking-tighter">BULAKBOT</h1>
-          <button 
-            onClick={() => setIsParsing(true)}
-            type="button"
-            className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-bold active:scale-95 transition-all"
-          >
-            <ScanLine size={18} /> SCAN
-          </button>
         </header>
 
         <main className="max-w-md mx-auto px-4 py-6 space-y-6">
@@ -93,6 +85,27 @@ function App() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             
+            {/* HERO SECTION: SCAN TRIGGER (New Placement) */}
+            <button
+               type="button"
+               onClick={() => setIsParsing(true)}
+               className="w-full bg-gray-900 rounded-3xl p-6 text-left shadow-xl shadow-gray-200 group active:scale-[0.98] transition-all relative overflow-hidden"
+            >
+               {/* Decorative Gradient */}
+               <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500 rounded-full blur-[60px] opacity-30 group-hover:opacity-50 transition-opacity" />
+               
+               <div className="relative z-10 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-white font-black text-2xl tracking-tight">Got an Order?</h2>
+                    <p className="text-gray-400 text-sm font-medium mt-1">Paste order slip to autofill</p>
+                  </div>
+                  <div className="bg-white/10 p-3 rounded-2xl group-hover:bg-white/20 transition-colors">
+                     <ScanLine size={32} className="text-pink-400" />
+                  </div>
+               </div>
+            </button>
+
+
             {/* TYPE SELECTOR */}
             <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-200">
                <div className="grid grid-cols-2 gap-2">

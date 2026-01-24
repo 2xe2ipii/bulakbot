@@ -8,7 +8,7 @@ import {
   addMonths, subMonths, isSameMonth, isToday 
 } from 'date-fns';
 
-// --- CUSTOM CALENDAR COMPONENT (Fixed 6-Row Grid) ---
+// --- CUSTOM CALENDAR COMPONENT ---
 function CustomCalendarModal({ 
   isOpen, 
   onClose, 
@@ -26,56 +26,57 @@ function CustomCalendarModal({
 
   if (!isOpen) return null;
 
-  // CONSTANT 6-ROW GRID LOGIC
-  // We always start from the beginning of the week of the 1st of the month
+  // Constant 6-row grid
   const monthStart = startOfMonth(currentMonth);
   const startDate = startOfWeek(monthStart);
-  
-  // We generate exactly 42 days (6 weeks * 7 days) to keep height stable
   const calendarDays = Array.from({ length: 42 }, (_, i) => addDays(startDate, i));
   const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/5">
+    <div className="fixed inset-0 z-50 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         
-        {/* Header */}
-        <div className="bg-white p-5 border-b border-gray-100 flex justify-between items-center">
-          <div>
-            <h3 className="font-black text-xl text-gray-900 tracking-tight">{title}</h3>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
-              {format(currentMonth, 'MMMM yyyy')}
-            </p>
-          </div>
-          <div className="flex gap-1">
-             <button 
-                onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-600 transition-colors"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <button 
-                onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-600 transition-colors"
-              >
-                <ChevronRight size={20} />
-              </button>
+        {/* BIG BOLD HEADER */}
+        <div className="bg-pink-600 p-6 text-white relative overflow-hidden">
+          {/* Decorative Circle */}
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-pink-500 rounded-full opacity-50 blur-2xl" />
+          
+          <div className="relative z-10 flex justify-between items-start">
+             <div>
+                <p className="text-pink-100 font-bold text-xs uppercase tracking-widest mb-1">{title}</p>
+                <h3 className="text-3xl font-black tracking-tighter">
+                  {format(currentMonth, 'MMMM')}
+                </h3>
+                <p className="text-xl font-medium opacity-90">{format(currentMonth, 'yyyy')}</p>
+             </div>
+             <div className="flex gap-2">
+                <button 
+                  onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                  className="p-2 bg-pink-700/50 hover:bg-pink-700 rounded-xl transition-colors backdrop-blur-sm"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <button 
+                  onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                  className="p-2 bg-pink-700/50 hover:bg-pink-700 rounded-xl transition-colors backdrop-blur-sm"
+                >
+                  <ChevronRight size={24} />
+                </button>
+             </div>
           </div>
         </div>
 
         {/* Calendar Body */}
-        <div className="p-5">
-          {/* Days Header */}
-          <div className="grid grid-cols-7 mb-3">
+        <div className="p-6">
+          <div className="grid grid-cols-7 mb-4">
             {weekDays.map(d => (
-              <div key={d} className="text-center text-[10px] font-black text-gray-400 uppercase tracking-wider">
+              <div key={d} className="text-center text-xs font-bold text-gray-400 uppercase">
                 {d}
               </div>
             ))}
           </div>
 
-          {/* Days Grid */}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-y-3 gap-x-1">
             {calendarDays.map((day, idx) => {
               const isSelected = selectedDate && isSameDay(day, selectedDate);
               const isCurrentMonth = isSameMonth(day, currentMonth);
@@ -86,16 +87,17 @@ function CustomCalendarModal({
                   key={idx}
                   onClick={() => { onSelect(day); onClose(); }}
                   className={cn(
-                    "h-10 rounded-xl text-sm font-bold flex items-center justify-center transition-all relative",
-                    !isCurrentMonth && "text-gray-300",
-                    isCurrentMonth && !isSelected && "text-gray-700 hover:bg-gray-50 hover:text-pink-600",
-                    isCurrentMonth && isDayToday && !isSelected && "text-pink-600 bg-pink-50 ring-1 ring-pink-100",
-                    isSelected && "bg-pink-600 text-white shadow-lg shadow-pink-200 scale-105 z-10"
+                    "h-10 w-full rounded-full text-sm font-bold flex items-center justify-center transition-all relative",
+                    !isCurrentMonth && "text-gray-200", // Faded days
+                    isCurrentMonth && !isSelected && "text-gray-700 hover:bg-gray-100",
+                    isCurrentMonth && isDayToday && !isSelected && "text-pink-600 font-black",
+                    isSelected && "bg-pink-600 text-white shadow-lg shadow-pink-200 scale-110 z-10"
                   )}
                 >
                   {format(day, 'd')}
+                  {/* Today Dot */}
                   {isDayToday && !isSelected && (
-                    <span className="absolute bottom-1 w-1 h-1 bg-pink-400 rounded-full" />
+                    <span className="absolute -bottom-1 w-1 h-1 bg-pink-600 rounded-full" />
                   )}
                 </button>
               );
@@ -104,10 +106,10 @@ function CustomCalendarModal({
         </div>
         
         {/* Footer */}
-        <div className="p-3 bg-gray-50 border-t border-gray-100">
+        <div className="p-4 bg-gray-50 border-t border-gray-100">
           <button 
             onClick={onClose}
-            className="w-full py-3 rounded-xl text-xs font-black text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors uppercase tracking-widest"
+            className="w-full py-3 rounded-xl text-xs font-black text-gray-500 hover:bg-gray-200 hover:text-gray-900 transition-colors uppercase tracking-widest"
           >
             Cancel
           </button>
