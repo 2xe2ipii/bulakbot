@@ -10,24 +10,17 @@ const parsePrice = (str: string): number => {
 
 const normalizeTime = (raw: string): string => {
   if (!raw) return "";
-  
-  // Remove spaces and lowercase
   const clean = raw.toLowerCase().replace(/\s+/g, '');
   
-  // Regex to capture: (Start)(Separator)(End)(Suffix)
-  // Matches: "2:30", "2:30pm", "2:30-3:00pm", "2-3pm"
   const rangeMatch = clean.match(/^(\d{1,2}(?:[:.]\d{2})?)(?:(?:-|to)(\d{1,2}(?:[:.]\d{2})?))?([ap]m)?$/);
   
   if (!rangeMatch) {
-      // Fallback: try to just grab the first valid time-looking thing
       const fallback = clean.match(/(\d{1,2}(?:[:.]\d{2})?)([ap]m)?/);
       if(!fallback) return "";
       return formatHhMm(fallback[1], fallback[2]);
   }
 
   let [_, startStr, endStr, suffix] = rangeMatch;
-
-  // LOGIC: Infer start suffix from end suffix
   let startSuffix = suffix;
   
   if (startStr && endStr && suffix) {
@@ -35,12 +28,9 @@ const normalizeTime = (raw: string): string => {
      const endVal = parseFloat(endStr.replace(':', '.'));
      
      if (suffix === 'pm') {
-         // Case: 2-3pm -> 2pm. 
-         // Case: 11-1pm -> 11am
          if (startVal < 12 && startVal > endVal) startSuffix = 'am';
          else startSuffix = 'pm';
      } else {
-         // e.g. 9-11am
          startSuffix = 'am';
      }
   }
@@ -60,23 +50,51 @@ const formatHhMm = (timeStr: string, suffix?: string): string => {
    return `${h.toString().padStart(2, '0')}:${mStr}`;
 };
 
-// --- IMPROVED QUANTITY EXTRACTION ---
+// --- STRICT QUANTITY EXTRACTION (With Dozen Support) ---
 const extractQty = (str: string): number | null => {
-  // 1. Strict Match: Look for number followed immediately by a unit (e.g. "3 pcs", "1 doz")
-  // This prevents matching "500" in "500 - 3 pcs"
-  const strictMatch = str.match(/\b(\d+)\s*(?:pc|pcs|doz|stem|stems)\b/i);
-  if (strictMatch) return parseInt(strictMatch[1], 10);
+  // 1. Check for Dozen first (multiplier)
+  const dozMatch = str.match(/\b(\d+)\s*(?:doz|dozen|dozens)\b/i);
+  if (dozMatch) {
+      return parseInt(dozMatch[1], 10) * 12;
+  }
 
-  // 2. Price Cleaning: If no unit, assume the format might be "Price - Qty Item"
-  // Remove potential price prefix (Digits followed by dash)
-  // e.g. "500 - 3 sunflower" -> "3 sunflower"
-  const cleanStr = str.replace(/^\s*\d+[\s-]+\s*/, '');
+  // 2. Strict Unit Match: "3 pcs"
+  const unitMatch = str.match(/\b(\d+)\s*(?:pc|pcs|stem|stems)\b/i);
+  if (unitMatch) return parseInt(unitMatch[1], 10);
 
-  // 3. Loose Match: Look for any remaining number
-  const looseMatch = cleanStr.match(/\b(\d+)\b/);
-  if (looseMatch) return parseInt(looseMatch[1], 10);
+  // 3. Price Pattern: "500 - 3 sunflower"
+  const priceDashMatch = str.match(/^\s*\d+[\s-]+\s*(\d+)\b/);
+  if (priceDashMatch) return parseInt(priceDashMatch[1], 10);
+
+  // 4. Fallback: Small numbers only
+  const looseMatch = str.match(/\b(\d+)\b/);
+  if (looseMatch) {
+      const val = parseInt(looseMatch[1], 10);
+      if (val < 100) return val; 
+  }
 
   return null;
+};
+
+// --- SMART SPLITTER ---
+const smartSplit = (text: string): string[] => {
+  const segments: string[] = [];
+  let current = "";
+  let parenDepth = 0;
+
+  for (const char of text) {
+    if (char === '(') parenDepth++;
+    else if (char === ')') parenDepth--;
+
+    if ((char === '\n' || (char === ',' && parenDepth === 0))) {
+      if (current.trim()) segments.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) segments.push(current.trim());
+  return segments;
 };
 
 // --- FLOWER PARSING ENGINE ---
@@ -88,16 +106,15 @@ const parseFlowers = (text: string) => {
   };
 
   const lowerText = text.toLowerCase();
-  
-  // Split logic: Split by comma or newline
-  const segments = lowerText.split(/,|\n/g).map(s => s.trim()).filter(s => s);
+  const segments = smartSplit(lowerText);
 
   segments.forEach(segment => {
+    if (segment.includes('delivery fee') || segment.includes('fee')) return;
+
     const rawQty = extractQty(segment);
-    // Default to 1 if item found but no quantity (e.g. "sunflower" -> 1 sunflower)
     let mainQty = rawQty !== null ? rawQty : 1;
     
-    // --- 1. HANDLE PARENTHESES BREAKDOWN ---
+    // --- 1. HANDLE PARENTHESES ---
     const parenMatch = segment.match(/\((.*?)\)/);
     
     if (parenMatch) {
@@ -108,19 +125,16 @@ const parseFlowers = (text: string) => {
 
        parts.forEach(part => {
           const subQty = extractQty(part);
-          // Inside parens logic: 
-          // If subQty found, use it. 
-          // If list has multiple items but no qty, assume 1 each.
-          // If list has single item with no qty, assume mainQty.
+          // Only inherit mainQty if there is exactly one item inside parens and no subQty
           const count = subQty !== null ? subQty : (parts.length === 1 ? mainQty : 1);
 
           let matched = false;
           if (part.includes('two') || part.includes('tone')) { flowers.twoTonePink += count; matched = true; }
           else if (part.includes('china') || part.includes('fuschia')) { flowers.chinaPink += count; matched = true; }
+          else if (part.includes('sunflower') || part.includes('sun')) { flowers.sunflower += count; matched = true; }
           else if (segment.includes('imported') || segment.includes('ecuador')) {
              if (part.includes('red')) { flowers.importedRed += count; matched = true; }
           } else {
-             // Local defaults
              if (part.includes('red')) { flowers.localRed += count; matched = true; }
              else if (part.includes('white')) { flowers.localWhite += count; matched = true; }
              else if (part.includes('pink') || part.includes('old')) { flowers.localPink += count; matched = true; }
@@ -131,33 +145,21 @@ const parseFlowers = (text: string) => {
        if (parensParsed) return; 
     }
 
-    // --- 2. NO PARENTHESES LOGIC ---
+    // --- 2. MAIN SEGMENT LOGIC ---
 
-    if (segment.includes('two') || segment.includes('tone')) {
-        flowers.twoTonePink += mainQty; return;
-    }
-    if (segment.includes('china') || segment.includes('fuschia')) {
-        flowers.chinaPink += mainQty; return;
-    }
-    if (segment.includes('sunflower') || segment.includes('sun')) {
-        flowers.sunflower += mainQty; return;
-    }
-    if (segment.includes('carnation')) {
-        flowers.carnation += mainQty; return;
-    }
-    if (segment.includes('stargazer') || segment.includes('star')) {
-        flowers.stargazer += mainQty; return;
-    }
-    if (segment.includes('tulip')) {
-        flowers.tulips += mainQty; return;
-    }
+    if (segment.includes('two') || segment.includes('tone')) { flowers.twoTonePink += mainQty; return; }
+    if (segment.includes('china') || segment.includes('fuschia')) { flowers.chinaPink += mainQty; return; }
+    if (segment.includes('sunflower') || segment.includes('sun')) { flowers.sunflower += mainQty; return; }
+    if (segment.includes('carnation')) { flowers.carnation += mainQty; return; }
+    if (segment.includes('stargazer') || segment.includes('star')) { flowers.stargazer += mainQty; return; }
+    if (segment.includes('tulip')) { flowers.tulips += mainQty; return; }
 
     const isImported = segment.includes('imported') || segment.includes('ecuador');
-    const isLocal = segment.includes('local') || (!isImported && segment.includes('rose'));
+    const isLocal = segment.includes('local') || (!isImported && (segment.includes('rose') || segment.includes('flower'))); 
 
     if (isImported) {
         if (segment.includes('red')) flowers.importedRed += mainQty;
-        else flowers.importedRed += mainQty; // Default to Red if unspec
+        else flowers.importedRed += mainQty; 
     } 
     else if (isLocal) {
         if (segment.includes('red')) flowers.localRed += mainQty;
@@ -175,28 +177,25 @@ export const parseOrderText = (text: string): Partial<OrderFormValues> => {
   const result: Partial<OrderFormValues> = {};
   
   let currentSection: 'NONE' | 'RECIPIENT' | 'SENDER' | 'SUMMARY' | 'NOTES' = 'NONE';
-  
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+  let summaryTextBlock = ""; 
 
-  // 1. First Pass: Detect Type
   if (text.toLowerCase().includes('pick up')) result.type = 'PICK UP';
-  else result.type = 'DELIVERY'; // Default
+  else result.type = 'DELIVERY';
 
   lines.forEach(line => {
     const lower = line.toLowerCase();
 
-    // SECTION RESET
+    // Section Reset
     if (currentSection === 'SUMMARY' && lower.match(/^(total|down|gsh|payment|date|time|name|address|contact)/)) {
         currentSection = 'NONE';
     }
 
-    // SECTION DETECTION
+    // Section Detection
     if (lower.match(/^order summary/)) { currentSection = 'SUMMARY'; return; }
     if (lower.match(/delivered to|recipient/)) { currentSection = 'RECIPIENT'; return; }
     if (lower.match(/^\(?pick\s*up\s*by/)) { currentSection = 'RECIPIENT'; result.type = 'PICK UP'; return; }
     if (lower.match(/ordered by|customer/)) { currentSection = 'SENDER'; return; }
-    
-    // NOTES DETECTION
     if (lower.match(/^(notes|ps|nb|internal notes)[:.]/)) {
         currentSection = 'NOTES';
         const content = line.replace(/^(notes|ps|nb|internal notes)[:.]\s*/i, '').trim();
@@ -204,25 +203,26 @@ export const parseOrderText = (text: string): Partial<OrderFormValues> => {
         return; 
     }
     
-    // --- NOTES CAPTURE ---
+    // --- Data Capture ---
+
     if (currentSection === 'NOTES') {
         if (!result.notes) result.notes = line;
         else result.notes += "\n" + line;
         return;
     }
 
-    // --- SUMMARY CAPTURE ---
     if (currentSection === 'SUMMARY') {
-        if (!result.orderSummary) result.orderSummary = line;
-        else result.orderSummary += "\n" + line;
-
-        const possibleCode = line.match(/\b([A-Z]{1,2}\d{1,2})\b/);
-        if (possibleCode && !result.code) result.code = possibleCode[1];
+        if (!lower.includes('delivery fee') && !lower.includes('fee')) {
+            if (!result.orderSummary) result.orderSummary = line;
+            else result.orderSummary += "\n" + line;
+            summaryTextBlock += line + "\n"; 
+            const possibleCode = line.match(/\b([A-Z]{1,2}\d{1,2})\b/);
+            if (possibleCode && !result.code) result.code = possibleCode[1];
+        }
     }
 
-    // --- FIELD PARSING ---
+    // --- Fields ---
 
-    // Date
     const dateMatch = line.match(/^(?:DATE|TARGET DATE)(?:.*:)?\s*(.*)/i);
     if (dateMatch) {
       let dStr = dateMatch[1].trim();
@@ -231,23 +231,50 @@ export const parseOrderText = (text: string): Partial<OrderFormValues> => {
       if (!isNaN(d.getTime())) result.targetDate = d;
     }
 
-    // Time
     const timeMatch = line.match(/^(?:TIME|DELIVERY TIME)\s*[:.]?\s*(.*)/i);
     if (timeMatch) result.deliveryTime = normalizeTime(timeMatch[1]);
 
-    // Financials
+    // Financials & Full Payment Logic
     if (lower.startsWith('total')) {
         result.total = parsePrice(line);
-        result.balance = result.total; 
+        
+        // Check if the Total line itself says "paid" or "unpaid"
+        if (lower.includes('paid') && !lower.includes('unpaid')) {
+            result.amountPaid = result.total;
+        } else if (lower.includes('unpaid')) {
+            result.amountPaid = 0;
+        }
+        
+        // Default Assumption if not overwritten later
+        if (result.amountPaid === undefined) {
+             result.balance = result.total;
+        }
     }
-    if (lower.startsWith('downpayment') || lower.startsWith('dp') || lower.startsWith('paid')) {
-        result.amountPaid = parsePrice(line);
+    
+    if (lower.startsWith('downpayment') || lower.startsWith('dp') || lower.startsWith('paid') || lower.startsWith('payment')) {
+        if (lower.includes('full') || lower.includes('fully') || lower.includes('paid')) {
+            // "Downpayment: Full Payment" or "Payment: Paid"
+            // We need to know the Total to set this correctly. 
+            // If Total matches parsed already, set amountPaid = total.
+            // If total not found yet, we flag it? 
+            // Simpler: If "Full", set a flag or try to parse number. 
+            // If text is just "Full Payment" with no number, we rely on Total being found later or earlier.
+            if (result.total) {
+                result.amountPaid = result.total;
+            } else {
+                // If total not found yet, we can't set amountPaid safely to a number.
+                // But usually Total comes before Downpayment in your template.
+                // If not, we can infer it.
+            }
+        } else {
+            result.amountPaid = parsePrice(line);
+        }
     }
+
     if (lower.includes('delivery fee')) {
         result.deliveryFee = parsePrice(line);
     }
 
-    // Names
     const nameMatch = line.match(/^Name\s*[:.]\s*(.*)/i);
     if (nameMatch) {
        const val = nameMatch[1].trim();
@@ -258,18 +285,14 @@ export const parseOrderText = (text: string): Partial<OrderFormValues> => {
        else if (currentSection === 'SENDER') result.orderedBy = val;
     }
 
-    // Contact Numbers
     const contactMatch = line.match(/^(?:Contact|Mobile|Cp|Phone)\s*(?:No|Number|#)?\.?\s*[:.]?\s*([0-9\s-]+)/i);
     if (contactMatch) {
        const val = contactMatch[1].replace(/[^\d]/g, ''); 
-       
        if (currentSection === 'SENDER') {
           result.contactNumber = val;
        } 
        else if (currentSection === 'RECIPIENT') {
            if (!result.contactNumber) result.contactNumber = val;
-           
-           // Only append to Name if DELIVERY
            if (result.type === 'DELIVERY') {
                if (result.deliveredTo && !result.deliveredTo.includes(val)) {
                    result.deliveredTo = `${result.deliveredTo} Contact No. ${val}`;
@@ -278,23 +301,31 @@ export const parseOrderText = (text: string): Partial<OrderFormValues> => {
        }
     }
 
-    const addressMatch = line.match(/^(?:Complete Address|Address|Loc)\s*[:.]\s*(.*)/i);
+    const addressMatch = line.match(/^(?:Complete\s*Address|Address|Location|Loc|Landmark)(?:.*)?\s*[:.]\s*(.*)/i);
     if (addressMatch) result.address = addressMatch[1].trim();
 
     const msgMatch = line.match(/^(?:Short greetings|Message|Card|Greetings)\s*[:.]\s*(.*)/i);
     if (msgMatch) result.cardMessage = msgMatch[1].trim();
-
   });
 
   // Parse Flowers
-  const flowers = parseFlowers(text);
+  const textToScanForFlowers = summaryTextBlock.trim().length > 0 ? summaryTextBlock : text;
+  const flowers = parseFlowers(textToScanForFlowers);
   if (Object.values(flowers).some(x => x > 0)) result.flowers = flowers;
 
-  // Final Math
-  if (result.total && result.amountPaid) {
-      result.balance = result.total - result.amountPaid;
+  // Final Math & Status
+  // If amountPaid was set to Total via "Full Payment" logic, ensure balance is 0
+  if (result.total !== undefined) {
+      // Re-check for Full Payment Flag in case Total came AFTER the Downpayment line
+      // (Rare, but possible in loose text). 
+      // Current logic assumes Total is found before or we used parsePrice.
+      
+      const paid = result.amountPaid || 0;
+      result.balance = result.total - paid;
+      
       if (result.balance <= 0) result.status = 'PAID';
-      else result.status = 'DOWNPAYMENT';
+      else if (paid > 0) result.status = 'DOWNPAYMENT';
+      else result.status = 'UNPAID';
   }
 
   return result;
