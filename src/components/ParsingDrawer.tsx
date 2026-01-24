@@ -80,7 +80,7 @@ Order: 1 Dozen Red Roses
 Total: 1500"
             value={parseText}
             onChange={(e) => setParseText(e.target.value)}
-            autoFocus
+            // autoFocus removed here
             />
             {/* Quick Paste Button inside text area */}
             {!parseText && (
