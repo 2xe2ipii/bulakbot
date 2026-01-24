@@ -26,51 +26,45 @@ function CustomCalendarModal({
 
   if (!isOpen) return null;
 
-  // Constant 6-row grid
   const monthStart = startOfMonth(currentMonth);
   const startDate = startOfWeek(monthStart);
   const calendarDays = Array.from({ length: 42 }, (_, i) => addDays(startDate, i));
   const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   return (
-    <div className="fixed inset-0 z-50 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+      {/* RESTORED: rounded-2xl for Modal */}
+      <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         
-        {/* BIG BOLD HEADER */}
-        <div className="bg-pink-600 p-6 text-white relative overflow-hidden">
-          {/* Decorative Circle */}
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-pink-500 rounded-full opacity-50 blur-2xl" />
-          
-          <div className="relative z-10 flex justify-between items-start">
+        {/* HEADER: Clean Orange Gradient */}
+        <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-5 text-white flex justify-between items-center">
              <div>
-                <p className="text-pink-100 font-bold text-xs uppercase tracking-widest mb-1">{title}</p>
-                <h3 className="text-3xl font-black tracking-tighter">
-                  {format(currentMonth, 'MMMM')}
+                <p className="text-orange-100 font-bold text-xs uppercase tracking-widest mb-1">{title}</p>
+                <h3 className="text-2xl font-black tracking-tight">
+                  {format(currentMonth, 'MMMM yyyy')}
                 </h3>
-                <p className="text-xl font-medium opacity-90">{format(currentMonth, 'yyyy')}</p>
              </div>
-             <div className="flex gap-2">
+             <div className="flex gap-1">
                 <button 
-                  type="button" // <--- FIXED: Prevents form submission
+                  type="button" 
                   onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                  className="p-2 bg-pink-700/50 hover:bg-pink-700 rounded-xl transition-colors backdrop-blur-sm"
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
                 >
-                  <ChevronLeft size={24} />
+                  <ChevronLeft size={20} />
                 </button>
                 <button 
-                  type="button" // <--- FIXED: Prevents form submission
+                  type="button" 
                   onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                  className="p-2 bg-pink-700/50 hover:bg-pink-700 rounded-xl transition-colors backdrop-blur-sm"
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
                 >
-                  <ChevronRight size={24} />
+                  <ChevronRight size={20} />
                 </button>
              </div>
-          </div>
         </div>
 
         {/* Calendar Body */}
-        <div className="p-6">
-          <div className="grid grid-cols-7 mb-4">
+        <div className="p-5 bg-white">
+          <div className="grid grid-cols-7 mb-3">
             {weekDays.map(d => (
               <div key={d} className="text-center text-xs font-bold text-gray-400 uppercase">
                 {d}
@@ -78,7 +72,7 @@ function CustomCalendarModal({
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-y-3 gap-x-1">
+          <div className="grid grid-cols-7 gap-1">
             {calendarDays.map((day, idx) => {
               const isSelected = selectedDate && isSameDay(day, selectedDate);
               const isCurrentMonth = isSameMonth(day, currentMonth);
@@ -87,21 +81,17 @@ function CustomCalendarModal({
               return (
                 <button
                   key={idx}
-                  type="button" // <--- FIXED: Prevents form submission
+                  type="button" 
                   onClick={() => { onSelect(day); onClose(); }}
                   className={cn(
-                    "h-10 w-full rounded-full text-sm font-bold flex items-center justify-center transition-all relative",
-                    !isCurrentMonth && "text-gray-200", // Faded days
-                    isCurrentMonth && !isSelected && "text-gray-700 hover:bg-gray-100",
-                    isCurrentMonth && isDayToday && !isSelected && "text-pink-600 font-black",
-                    isSelected && "bg-pink-600 text-white shadow-lg shadow-pink-200 scale-110 z-10"
+                    "h-10 w-full rounded-lg text-sm font-bold flex items-center justify-center transition-all",
+                    !isCurrentMonth && "text-gray-300", 
+                    isCurrentMonth && !isSelected && "text-gray-700 hover:bg-orange-50 hover:text-orange-600",
+                    isCurrentMonth && isDayToday && !isSelected && "text-orange-500 font-black bg-orange-50",
+                    isSelected && "bg-orange-500 text-white shadow-md"
                   )}
                 >
                   {format(day, 'd')}
-                  {/* Today Dot */}
-                  {isDayToday && !isSelected && (
-                    <span className="absolute -bottom-1 w-1 h-1 bg-pink-600 rounded-full" />
-                  )}
                 </button>
               );
             })}
@@ -111,9 +101,9 @@ function CustomCalendarModal({
         {/* Footer */}
         <div className="p-4 bg-gray-50 border-t border-gray-100">
           <button 
-            type="button" // <--- FIXED: Prevents form submission
+            type="button" 
             onClick={onClose}
-            className="w-full py-3 rounded-xl text-xs font-black text-gray-500 hover:bg-gray-200 hover:text-gray-900 transition-colors uppercase tracking-widest"
+            className="w-full py-3 rounded-xl text-xs font-black text-gray-500 hover:text-gray-900 transition-colors uppercase tracking-widest"
           >
             Cancel
           </button>
@@ -124,8 +114,6 @@ function CustomCalendarModal({
 }
 
 // --- MAIN COMPONENT ---
-
-// Default presets (Feb 13-15, 2026)
 const DEFAULT_PRESETS = [
   '2026-02-13T00:00:00',
   '2026-02-14T00:00:00',
@@ -144,7 +132,6 @@ export function DateSelector({ isPickUp }: { isPickUp: boolean }) {
   const targetDate = watch('targetDate');
   const deliveryTime = watch('deliveryTime');
 
-  // Load presets
   const [presets, setPresets] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('jb_date_presets');
@@ -171,7 +158,6 @@ export function DateSelector({ isPickUp }: { isPickUp: boolean }) {
     } 
     else if (calendarMode?.type === 'EDIT_PRESET') {
         const newPresets = [...presets];
-        // Save as ISO string at midnight local
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
@@ -206,13 +192,14 @@ export function DateSelector({ isPickUp }: { isPickUp: boolean }) {
         {/* --- DATE SCHEDULE SECTION --- */}
         <div className="space-y-3">
           <div className="flex justify-between items-center h-6">
-            <h2 className={cn("text-xs font-black uppercase tracking-widest transition-colors", isEditing ? "text-orange-500" : "text-pink-600")}>
+            {/* NO DOTS HERE */}
+            <h2 className={cn("text-xs font-black uppercase tracking-widest transition-colors", isEditing ? "text-red-500" : "text-orange-500")}>
               {isEditing ? "Editing Presets..." : (isPickUp ? "Pick Up Schedule" : "Delivery Schedule")}
             </h2>
             <button 
               type="button" 
               onClick={() => setIsEditing(!isEditing)}
-              className={cn("transition-colors active:scale-95", isEditing ? "text-orange-500 bg-orange-50 p-1.5 rounded-lg" : "text-gray-400 hover:text-pink-600")}
+              className={cn("transition-colors active:scale-95", isEditing ? "text-red-500 bg-red-50 p-1.5 rounded-lg" : "text-gray-400 hover:text-orange-500")}
               title="Configure Presets"
             >
               <SlidersHorizontal size={16} />
@@ -238,42 +225,41 @@ export function DateSelector({ isPickUp }: { isPickUp: boolean }) {
                       }
                   }}
                   className={cn(
-                    "flex flex-col items-center justify-center py-3 rounded-xl border transition-all active:scale-95 relative overflow-hidden",
+                    "flex flex-col items-center justify-center py-3 rounded-xl border-2 transition-all active:scale-95 relative overflow-hidden",
                     isEditing 
-                        ? "border-orange-200 bg-orange-50/50 text-orange-700 hover:border-orange-300" // Edit Mode
+                        ? "border-red-200 bg-red-50/50 text-red-700 hover:border-red-300" // Edit Mode
                         : isSelected 
-                            ? "border-pink-600 bg-pink-50 text-pink-700 shadow-sm ring-1 ring-pink-600" // Selected
-                            : "border-gray-100 bg-white text-gray-500 hover:border-pink-200 hover:bg-gray-50" // Default
+                            ? "border-orange-500 bg-orange-500 text-white shadow-md" // Selected
+                            : "border-transparent bg-white text-gray-500 hover:bg-orange-50" // Default
                   )}
                 >
-                    <span className="text-[10px] font-bold uppercase mb-0.5">{format(dateObj, 'MMM')}</span>
+                    <span className={cn("text-[10px] font-bold uppercase mb-0.5", isSelected ? "text-orange-100" : "text-gray-400")}>{format(dateObj, 'MMM')}</span>
                     <span className="text-2xl font-black leading-none">{format(dateObj, 'd')}</span>
                     
-                    {/* Small edit indicator dot */}
                     {isEditing && (
-                        <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-orange-300 rounded-full" />
+                        <div className="absolute top-2 right-2 w-2 h-2 bg-red-400 rounded-full" />
                     )}
                 </button>
               );
             })}
 
-            {/* 4th Box: CUSTOM DATE BUTTON (Hidden during Editing) */}
+            {/* 4th Box: OTHER */}
             {!isEditing && (
                 <button
                    type="button"
                    onClick={() => setCalendarMode({ type: 'SELECT_TARGET' })} 
                    className={cn(
-                    "relative flex flex-col items-center justify-center rounded-xl border transition-all cursor-pointer active:scale-95",
+                    "relative flex flex-col items-center justify-center rounded-xl border-2 transition-all cursor-pointer active:scale-95",
                      isCustomDate
-                      ? "border-pink-600 bg-pink-50 text-pink-700 shadow-sm ring-1 ring-pink-600"
-                      : "border-gray-100 bg-white text-gray-500 hover:border-pink-300 hover:bg-gray-50"
+                      ? "border-orange-500 bg-orange-500 text-white shadow-md"
+                      : "border-transparent bg-white text-gray-500 hover:bg-orange-50"
                    )}
                 >
-                   {!isCustomDate && <span className="text-[10px] font-bold uppercase mb-1">OTHER</span>}
+                   {!isCustomDate && <span className="text-[10px] font-bold uppercase mb-1 text-gray-400">OTHER</span>}
                    
                    {isCustomDate && targetDate ? (
                      <>
-                       <span className="text-[10px] font-bold uppercase mb-0.5">{format(new Date(targetDate), 'MMM')}</span>
+                       <span className="text-[10px] font-bold uppercase mb-0.5 text-orange-100">{format(new Date(targetDate), 'MMM')}</span>
                        <span className="text-2xl font-black leading-none">{format(new Date(targetDate), 'd')}</span>
                      </>
                    ) : (
@@ -302,10 +288,10 @@ export function DateSelector({ isPickUp }: { isPickUp: boolean }) {
                     type="button"
                     onClick={() => setQuickTime(h)}
                     className={cn(
-                    "py-3 rounded-xl text-lg font-bold border transition-all active:scale-95",
+                    "py-3 rounded-xl text-lg font-bold border-2 transition-all active:scale-95",
                     isSelected
-                        ? "bg-white text-pink-600 border-pink-600 shadow-sm ring-1 ring-pink-600" 
-                        : "bg-white text-gray-600 border-gray-200 hover:border-pink-300 hover:text-pink-500"
+                        ? "bg-white border-orange-500 text-orange-600 shadow-sm" 
+                        : "bg-white border-transparent text-gray-500 hover:bg-orange-50"
                     )}
                 >
                     {displayHour}
@@ -317,7 +303,7 @@ export function DateSelector({ isPickUp }: { isPickUp: boolean }) {
           <input 
               type="time" 
               {...register('deliveryTime')}
-              className="w-full h-12 px-4 border border-gray-300 rounded-xl text-center font-bold text-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              className="w-full h-12 px-4 border border-gray-300 rounded-xl text-center font-bold text-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           />
         </div>
       </div>

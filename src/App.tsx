@@ -33,24 +33,20 @@ function App() {
 
   const { register, handleSubmit, setValue, watch, reset, getValues, formState: { errors } } = methods;
   
-  // Watch inputs for calculations
   const amountPaid = watch("amountPaid");
   const balance = watch("balance"); 
   const isPickUp = watch("type") === 'PICK UP';
 
-  // --- AUTOMATIC CALCULATION & STATUS ---
   useEffect(() => {
     const p = Number(getValues('amountPaid')) || 0;
     const b = Number(getValues('balance')) || 0;
     const newTotal = p + b;
-    
     if (getValues('total') !== newTotal) setValue('total', newTotal);
 
     let newStatus = 'UNPAID';
     if (b === 0 && p > 0) newStatus = 'PAID';
     else if (p > 0 && b > 0) newStatus = 'DOWNPAYMENT';
     else if (p === 0 && b > 0) newStatus = 'UNPAID';
-    
     if (getValues('status') !== newStatus) setValue('status', newStatus as any);
   }, [amountPaid, balance, setValue, getValues]);
 
@@ -69,11 +65,14 @@ function App() {
 
   return (
     <FormProvider {...methods}>
-      <div className="min-h-screen bg-gray-50 pb-32 font-sans text-gray-900 relative">
+      <div className="min-h-screen font-sans text-gray-900 pb-32 bg-orange-50 relative">
         
         {/* HEADER */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 py-4 flex justify-center items-center shadow-sm">
-          <h1 className="text-xl font-black text-pink-600 tracking-tighter">BULAKBOT</h1>
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-orange-100 px-4 py-4 flex justify-center items-center shadow-sm">
+           {/* JUST TEXT, NO ICONS */}
+            <h1 className="text-xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-500">
+              5n10
+            </h1>
         </header>
 
         <main className="max-w-md mx-auto px-4 py-6 space-y-6">
@@ -97,9 +96,10 @@ function App() {
                         if(type === 'PICK UP') setValue('deliveryFee', 0);
                       }}
                       className={cn(
+                        // RESTORED rounded-xl
                         "flex flex-col items-center justify-center gap-1 py-4 rounded-xl border-2 font-black transition-all",
                         watch('type') === type 
-                          ? "border-pink-600 bg-pink-600 text-white shadow-lg shadow-pink-200" 
+                          ? "border-orange-500 bg-orange-500 text-white shadow-lg shadow-orange-200" 
                           : "border-transparent bg-gray-50 text-gray-400 hover:bg-gray-100"
                       )}
                     >
@@ -110,12 +110,12 @@ function App() {
                </div>
             </div>
 
-            {/* --- MODULAR DATE SELECTOR --- */}
+            {/* --- DATE SELECTOR --- */}
             <DateSelector isPickUp={isPickUp} />
 
             {/* DETAILS */}
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
-              <h2 className="text-xs font-black uppercase tracking-widest text-pink-600">Contact Details</h2>
+              <h2 className="text-xs font-black uppercase tracking-widest text-orange-500">Contact Details</h2>
               <FormInput label={isPickUp ? "Pick Up By" : "Delivered To"} name="deliveredTo" register={register} errors={errors} />
               <FormInput label="Contact #" name="contactNumber" register={register} errors={errors} type="text" placeholder="09xxxxxxxxx" />
               <FormInput label="Ordered By" name="orderedBy" register={register} errors={errors} />
@@ -125,7 +125,7 @@ function App() {
 
             {/* ORDER SPECS */}
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
-              <h2 className="text-xs font-black uppercase tracking-widest text-pink-600">Order Details</h2>
+              <h2 className="text-xs font-black uppercase tracking-widest text-orange-500">Order Details</h2>
               <FormInput label="Order Summary" name="orderSummary" register={register} errors={errors} placeholder="e.g. 1 Dozen Red Roses" />
               <div className="grid grid-cols-2 gap-3">
                  <FormInput label="Code" name="code" register={register} errors={errors} placeholder="e.g. R01" />
@@ -158,8 +158,9 @@ function App() {
             {/* PAYMENT */}
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
                <div className="flex justify-between items-center">
-                  <h2 className="text-xs font-black uppercase tracking-widest text-pink-600">Payment</h2>
-                  <div className={cn("px-2 py-1 rounded text-xs font-bold", watch('status') === 'PAID' ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                  <h2 className="text-xs font-black uppercase tracking-widest text-orange-500">Payment</h2>
+                  <div className={cn("px-2 py-1 rounded text-xs font-bold border", 
+                    watch('status') === 'PAID' ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-red-50 text-red-600 border-red-200")}>
                     {watch('status')}
                   </div>
                </div>
@@ -172,20 +173,21 @@ function App() {
                  <FormInput label="Balance" name="balance" type="number" step="0.01" register={register} errors={errors} />
               </div>
               {!isPickUp && <FormInput label="Del. Fee" name="deliveryFee" type="number" step="0.01" register={register} errors={errors} />}
-               <div className="mt-2 p-4 bg-gray-900 rounded-xl flex justify-between items-center text-white">
+               
+               <div className="mt-2 p-4 bg-gray-900 text-white rounded-xl flex justify-between items-center shadow-lg shadow-gray-200">
                   <span className="text-sm font-bold uppercase text-gray-400">Total</span>
                   <span className="text-2xl font-black">{formatCurrency(Number(amountPaid) + Number(balance))}</span>
                </div>
             </div>
 
-            {/* FLOATING ACTION BUTTON (SCAN) */}
+            {/* FAB SCAN BUTTON */}
             <button
                type="button"
                onClick={() => setIsParsing(true)}
                className="fixed bottom-24 right-4 z-40 bg-gray-900 text-white p-4 rounded-full shadow-2xl shadow-gray-400 active:scale-90 transition-all hover:bg-gray-800"
                title="Scan Order"
             >
-               <ScanLine size={28} />
+               <ScanLine size={24} />
             </button>
 
             {/* FOOTER */}
@@ -194,9 +196,10 @@ function App() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full flex items-center justify-center gap-2 bg-pink-600 text-white py-4 rounded-xl font-black text-lg shadow-lg active:scale-95 transition-all disabled:opacity-70"
+                    // RESTORED rounded-xl, kept orange gradient
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white py-4 rounded-xl font-black text-lg shadow-lg active:scale-95 transition-all disabled:opacity-70"
                   >
-                    {isSubmitting ? <Loader2 className="animate-spin" /> : <><Send size={20} /> SUBMIT</>}
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : <><Send size={20} /> SUBMIT ORDER</>}
                   </button>
                </div>
             </div>

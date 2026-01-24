@@ -42,8 +42,9 @@ export const FormInput = <T extends FieldValues>({
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
+      {/* RESTORED: Standard Label */}
       <label htmlFor={name} className="text-sm font-bold text-gray-700 uppercase tracking-tight">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-orange-500">*</span>}
       </label>
       
       {type === 'textarea' ? (
@@ -51,8 +52,9 @@ export const FormInput = <T extends FieldValues>({
           id={name}
           {...register(name)}
           placeholder={placeholder}
+          // RESTORED: rounded-xl, standard white background
           className={cn(
-            "flex min-h-[80px] w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all",
+            "flex min-h-[80px] w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none",
             errorMessage && "border-red-500 focus:ring-red-500"
           )}
         />
@@ -62,12 +64,10 @@ export const FormInput = <T extends FieldValues>({
           type={type}
           step={step}
           {...register(name, { valueAsNumber: isNumber })}
-          // THE FIX: Auto-select text on focus so you don't have to delete '0'
           onFocus={(e) => e.target.select()} 
           placeholder={placeholder}
           className={cn(
-            "flex h-12 w-full rounded-xl border border-gray-300 bg-white px-4 py-2 text-base shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50",
-            // THE FIX: Hide ugly spinners/arrows
+            "flex h-12 w-full rounded-xl border border-gray-300 bg-white px-4 py-2 text-base shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50",
             "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
             errorMessage && "border-red-500 focus:ring-red-500"
           )}
@@ -96,14 +96,14 @@ export const FormSelect = <T extends FieldValues>({
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
       <label htmlFor={name} className="text-sm font-bold text-gray-700 uppercase tracking-tight">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-orange-500">*</span>}
       </label>
       <div className="relative">
         <select
           id={name}
           {...register(name)}
           className={cn(
-            "flex h-12 w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-2 text-base font-medium shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50",
+            "flex h-12 w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-2 text-base font-medium shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50",
             errorMessage && "border-red-500 focus:ring-red-500"
           )}
         >
