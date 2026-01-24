@@ -51,12 +51,14 @@ function CustomCalendarModal({
              </div>
              <div className="flex gap-2">
                 <button 
+                  type="button" // <--- FIXED: Prevents form submission
                   onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
                   className="p-2 bg-pink-700/50 hover:bg-pink-700 rounded-xl transition-colors backdrop-blur-sm"
                 >
                   <ChevronLeft size={24} />
                 </button>
                 <button 
+                  type="button" // <--- FIXED: Prevents form submission
                   onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
                   className="p-2 bg-pink-700/50 hover:bg-pink-700 rounded-xl transition-colors backdrop-blur-sm"
                 >
@@ -85,6 +87,7 @@ function CustomCalendarModal({
               return (
                 <button
                   key={idx}
+                  type="button" // <--- FIXED: Prevents form submission
                   onClick={() => { onSelect(day); onClose(); }}
                   className={cn(
                     "h-10 w-full rounded-full text-sm font-bold flex items-center justify-center transition-all relative",
@@ -108,6 +111,7 @@ function CustomCalendarModal({
         {/* Footer */}
         <div className="p-4 bg-gray-50 border-t border-gray-100">
           <button 
+            type="button" // <--- FIXED: Prevents form submission
             onClick={onClose}
             className="w-full py-3 rounded-xl text-xs font-black text-gray-500 hover:bg-gray-200 hover:text-gray-900 transition-colors uppercase tracking-widest"
           >
