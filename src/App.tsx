@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useForm, FormProvider, type SubmitHandler, type DefaultValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Send, Bike, Store, ChevronUp, ChevronDown, ScanLine } from 'lucide-react';
+import { Loader2, ScanLine, Send, Bike, Store, ChevronUp, ChevronDown, ClipboardPaste, Check } from 'lucide-react';
 
 import { OrderSchema, type OrderFormValues } from './lib/schema';
+import { parseOrderText } from './lib/parser'; // <--- IMPORTED PARSER
 import { submitOrderToSheet } from './lib/gas';
 import { cn, formatCurrency } from './lib/utils';
 
@@ -15,6 +16,10 @@ function App() {
   const [isParsing, setIsParsing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
+  
+  // State for the "Quick Paste" button feedback
+  const [isPasting, setIsPasting] = useState(false);
+  const [pasteSuccess, setPasteSuccess] = useState(false);
 
   // Default to Today's date
   const defaultValues: DefaultValues<OrderFormValues> = {
@@ -50,6 +55,45 @@ function App() {
     if (getValues('status') !== newStatus) setValue('status', newStatus as any);
   }, [amountPaid, balance, setValue, getValues]);
 
+  // --- QUICK PASTE HANDLER ---
+  const handleQuickPaste = async () => {
+    setIsPasting(true);
+    try {
+        const text = await navigator.clipboard.readText();
+        if (!text) {
+            alert("Clipboard is empty!");
+            setIsPasting(false);
+            return;
+        }
+
+        const parsedData = parseOrderText(text);
+
+        // Populate Form
+        (Object.keys(parsedData) as Array<keyof OrderFormValues>).forEach((key) => {
+            const value = parsedData[key];
+            if (value !== undefined && value !== null) {
+                // @ts-ignore
+                setValue(key, value, { shouldValidate: true, shouldDirty: true });
+            }
+        });
+
+        // Show inventory if needed
+        if (parsedData.flowers && Object.values(parsedData.flowers).some(v => v > 0)) {
+            setShowInventory(true);
+        }
+
+        // Success Animation
+        setPasteSuccess(true);
+        setTimeout(() => setPasteSuccess(false), 2000);
+
+    } catch (err) {
+        console.error("Paste failed", err);
+        alert("Could not read clipboard. Please allow permissions.");
+    } finally {
+        setIsPasting(false);
+    }
+  };
+
   const onSubmit: SubmitHandler<OrderFormValues> = async (data) => {
     setIsSubmitting(true);
     try {
@@ -68,9 +112,8 @@ function App() {
       <div className="min-h-screen font-sans text-gray-900 pb-32 bg-orange-50 relative">
         
         {/* HEADER */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-orange-100 px-4 py-4 flex justify-center items-center shadow-sm">
-           {/* JUST TEXT, NO ICONS */}
-            <h1 className="text-xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-500">
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-orange-100 px-4 py-5 flex justify-center items-center shadow-sm">
+            <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-500 drop-shadow-sm">
               5n10
             </h1>
         </header>
@@ -96,7 +139,6 @@ function App() {
                         if(type === 'PICK UP') setValue('deliveryFee', 0);
                       }}
                       className={cn(
-                        // RESTORED rounded-xl
                         "flex flex-col items-center justify-center gap-1 py-4 rounded-xl border-2 font-black transition-all",
                         watch('type') === type 
                           ? "border-orange-500 bg-orange-500 text-white shadow-lg shadow-orange-200" 
@@ -173,36 +215,66 @@ function App() {
                  <FormInput label="Balance" name="balance" type="number" step="0.01" register={register} errors={errors} />
               </div>
               {!isPickUp && <FormInput label="Del. Fee" name="deliveryFee" type="number" step="0.01" register={register} errors={errors} />}
-               
                <div className="mt-2 p-4 bg-gray-900 text-white rounded-xl flex justify-between items-center shadow-lg shadow-gray-200">
                   <span className="text-sm font-bold uppercase text-gray-400">Total</span>
                   <span className="text-2xl font-black">{formatCurrency(Number(amountPaid) + Number(balance))}</span>
                </div>
             </div>
 
-            {/* FAB SCAN BUTTON */}
-            <button
-               type="button"
-               onClick={() => setIsParsing(true)}
-               className="fixed bottom-24 right-4 z-40 bg-gray-900 text-white p-4 rounded-full shadow-2xl shadow-gray-400 active:scale-90 transition-all hover:bg-gray-800"
-               title="Scan Order"
-            >
-               <ScanLine size={24} />
-            </button>
+            {/* FAB GROUP */}
+            {!isParsing && (
+              <div className="fixed bottom-24 right-4 z-40 flex flex-col gap-3 items-end animate-in fade-in slide-in-from-bottom-10 duration-500">
+                
+                {/* 1. QUICK PASTE BUTTON (Secondary) */}
+                <button
+                    type="button"
+                    onClick={handleQuickPaste}
+                    disabled={isPasting}
+                    className={cn(
+                        "p-3 rounded-full shadow-xl shadow-orange-200 active:scale-90 transition-all flex items-center gap-2",
+                        pasteSuccess 
+                            ? "bg-emerald-500 text-white" 
+                            : "bg-white text-orange-600 hover:bg-orange-50"
+                    )}
+                    title="Paste & Autofill"
+                >
+                    {isPasting ? (
+                        <Loader2 size={20} className="animate-spin" />
+                    ) : pasteSuccess ? (
+                        <Check size={20} /> 
+                    ) : (
+                        <ClipboardPaste size={20} />
+                    )}
+                    {/* Optional Label for clarity */}
+                    <span className="text-xs font-bold pr-1">{pasteSuccess ? "Parsed!" : "Paste"}</span>
+                </button>
 
-            {/* FOOTER */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-200 z-40">
-               <div className="max-w-md mx-auto">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    // RESTORED rounded-xl, kept orange gradient
-                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white py-4 rounded-xl font-black text-lg shadow-lg active:scale-95 transition-all disabled:opacity-70"
-                  >
-                    {isSubmitting ? <Loader2 className="animate-spin" /> : <><Send size={20} /> SUBMIT ORDER</>}
-                  </button>
-               </div>
-            </div>
+                {/* 2. MAIN SCAN BUTTON (Primary) */}
+                <button
+                    type="button"
+                    onClick={() => setIsParsing(true)}
+                    className="bg-gray-900 text-white p-4 rounded-full shadow-2xl shadow-gray-400 active:scale-90 transition-all hover:bg-gray-800"
+                    title="Open Scanner"
+                >
+                    <ScanLine size={24} />
+                </button>
+              </div>
+            )}
+
+            {/* FOOTER (Hidden when parsing) */}
+            {!isParsing && (
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-200 z-40 animate-in slide-in-from-bottom duration-300">
+                    <div className="max-w-md mx-auto">
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white py-4 rounded-xl font-black text-lg shadow-lg active:scale-95 transition-all disabled:opacity-70"
+                        >
+                            {isSubmitting ? <Loader2 className="animate-spin" /> : <><Send size={20} /> SUBMIT ORDER</>}
+                        </button>
+                    </div>
+                </div>
+            )}
           </form>
         </main>
       </div>
