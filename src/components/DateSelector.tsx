@@ -33,13 +33,12 @@ function CustomCalendarModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-      {/* RESTORED: rounded-2xl for Modal */}
-      <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         
-        {/* HEADER: Clean Orange Gradient */}
-        <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-5 text-white flex justify-between items-center">
+        {/* HEADER: Solid #093D09 (No Gradients) */}
+        <div className="bg-[#093D09] p-5 text-white flex justify-between items-center">
              <div>
-                <p className="text-orange-100 font-bold text-xs uppercase tracking-widest mb-1">{title}</p>
+                <p className="text-emerald-100 font-bold text-xs uppercase tracking-widest mb-1">{title}</p>
                 <h3 className="text-2xl font-black tracking-tight">
                   {format(currentMonth, 'MMMM yyyy')}
                 </h3>
@@ -63,10 +62,10 @@ function CustomCalendarModal({
         </div>
 
         {/* Calendar Body */}
-        <div className="p-5 bg-white">
+        <div className="p-5 bg-white dark:bg-gray-800">
           <div className="grid grid-cols-7 mb-3">
             {weekDays.map(d => (
-              <div key={d} className="text-center text-xs font-bold text-gray-400 uppercase">
+              <div key={d} className="text-center text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">
                 {d}
               </div>
             ))}
@@ -85,10 +84,10 @@ function CustomCalendarModal({
                   onClick={() => { onSelect(day); onClose(); }}
                   className={cn(
                     "h-10 w-full rounded-lg text-sm font-bold flex items-center justify-center transition-all",
-                    !isCurrentMonth && "text-gray-300", 
-                    isCurrentMonth && !isSelected && "text-gray-700 hover:bg-orange-50 hover:text-orange-600",
-                    isCurrentMonth && isDayToday && !isSelected && "text-orange-500 font-black bg-orange-50",
-                    isSelected && "bg-orange-500 text-white shadow-md"
+                    !isCurrentMonth && "text-gray-300 dark:text-gray-700", 
+                    isCurrentMonth && !isSelected && "text-gray-700 dark:text-gray-300 hover:bg-[#093D09]/10 hover:text-[#093D09] dark:hover:text-emerald-400",
+                    isCurrentMonth && isDayToday && !isSelected && "text-[#093D09] dark:text-emerald-400 font-black bg-[#093D09]/10",
+                    isSelected && "bg-[#093D09] text-white shadow-md"
                   )}
                 >
                   {format(day, 'd')}
@@ -99,11 +98,11 @@ function CustomCalendarModal({
         </div>
         
         {/* Footer */}
-        <div className="p-4 bg-gray-50 border-t border-gray-100">
+        <div className="p-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-100 dark:border-gray-600">
           <button 
             type="button" 
             onClick={onClose}
-            className="w-full py-3 rounded-xl text-xs font-black text-gray-500 hover:text-gray-900 transition-colors uppercase tracking-widest"
+            className="w-full py-3 rounded-xl text-xs font-black text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors uppercase tracking-widest"
           >
             Cancel
           </button>
@@ -187,19 +186,19 @@ export function DateSelector({ isPickUp }: { isPickUp: boolean }) {
         title={calendarMode?.type === 'EDIT_PRESET' ? "Change Preset Date" : "Select Date"}
       />
 
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-6">
+      <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-6">
         
         {/* --- DATE SCHEDULE SECTION --- */}
         <div className="space-y-3">
           <div className="flex justify-between items-center h-6">
-            {/* NO DOTS HERE */}
-            <h2 className={cn("text-xs font-black uppercase tracking-widest transition-colors", isEditing ? "text-red-500" : "text-orange-500")}>
+            {/* STYLED with #093D09 */}
+            <h2 className={cn("text-xs font-black uppercase tracking-widest transition-colors", isEditing ? "text-red-500" : "text-[#093D09] dark:text-emerald-400")}>
               {isEditing ? "Editing Presets..." : (isPickUp ? "Pick Up Schedule" : "Delivery Schedule")}
             </h2>
             <button 
               type="button" 
               onClick={() => setIsEditing(!isEditing)}
-              className={cn("transition-colors active:scale-95", isEditing ? "text-red-500 bg-red-50 p-1.5 rounded-lg" : "text-gray-400 hover:text-orange-500")}
+              className={cn("transition-colors active:scale-95", isEditing ? "text-red-500 bg-red-50 p-1.5 rounded-lg" : "text-gray-400 hover:text-[#093D09] dark:hover:text-emerald-400")}
               title="Configure Presets"
             >
               <SlidersHorizontal size={16} />
@@ -229,11 +228,11 @@ export function DateSelector({ isPickUp }: { isPickUp: boolean }) {
                     isEditing 
                         ? "border-red-200 bg-red-50/50 text-red-700 hover:border-red-300" // Edit Mode
                         : isSelected 
-                            ? "border-orange-500 bg-orange-500 text-white shadow-md" // Selected
-                            : "border-transparent bg-white text-gray-500 hover:bg-orange-50" // Default
+                            ? "border-[#093D09] bg-[#093D09] text-white shadow-md" // Selected (#093D09)
+                            : "border-transparent bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-[#093D09]/5 dark:hover:bg-gray-600" // Default
                   )}
                 >
-                    <span className={cn("text-[10px] font-bold uppercase mb-0.5", isSelected ? "text-orange-100" : "text-gray-400")}>{format(dateObj, 'MMM')}</span>
+                    <span className={cn("text-[10px] font-bold uppercase mb-0.5", isSelected ? "text-emerald-100" : "text-gray-400 dark:text-gray-500")}>{format(dateObj, 'MMM')}</span>
                     <span className="text-2xl font-black leading-none">{format(dateObj, 'd')}</span>
                     
                     {isEditing && (
@@ -251,19 +250,19 @@ export function DateSelector({ isPickUp }: { isPickUp: boolean }) {
                    className={cn(
                     "relative flex flex-col items-center justify-center rounded-xl border-2 transition-all cursor-pointer active:scale-95",
                      isCustomDate
-                      ? "border-orange-500 bg-orange-500 text-white shadow-md"
-                      : "border-transparent bg-white text-gray-500 hover:bg-orange-50"
+                      ? "border-[#093D09] bg-[#093D09] text-white shadow-md"
+                      : "border-transparent bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-[#093D09]/5 dark:hover:bg-gray-600"
                    )}
                 >
-                   {!isCustomDate && <span className="text-[10px] font-bold uppercase mb-1 text-gray-400">OTHER</span>}
+                   {!isCustomDate && <span className="text-[10px] font-bold uppercase mb-1 text-gray-400 dark:text-gray-500">OTHER</span>}
                    
                    {isCustomDate && targetDate ? (
                      <>
-                       <span className="text-[10px] font-bold uppercase mb-0.5 text-orange-100">{format(new Date(targetDate), 'MMM')}</span>
+                       <span className="text-[10px] font-bold uppercase mb-0.5 text-emerald-100">{format(new Date(targetDate), 'MMM')}</span>
                        <span className="text-2xl font-black leading-none">{format(new Date(targetDate), 'd')}</span>
                      </>
                    ) : (
-                     <CalendarIcon size={20} className="text-gray-300" />
+                     <CalendarIcon size={20} className="text-gray-300 dark:text-gray-500" />
                    )}
                 </button>
             )}
@@ -272,7 +271,7 @@ export function DateSelector({ isPickUp }: { isPickUp: boolean }) {
 
         {/* --- TIME SELECTION SECTION --- */}
         <div className="space-y-3">
-          <label className="text-sm font-bold text-gray-700 uppercase tracking-tight block">
+          <label className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight block">
               {isPickUp ? "Pick Up Time" : "Delivery Time"}
           </label>
           
@@ -290,8 +289,8 @@ export function DateSelector({ isPickUp }: { isPickUp: boolean }) {
                     className={cn(
                     "py-3 rounded-xl text-lg font-bold border-2 transition-all active:scale-95",
                     isSelected
-                        ? "bg-white border-orange-500 text-orange-600 shadow-sm" 
-                        : "bg-white border-transparent text-gray-500 hover:bg-orange-50"
+                        ? "bg-white dark:bg-gray-700 border-[#093D09] text-[#093D09] dark:text-emerald-400 shadow-sm" 
+                        : "bg-white dark:bg-gray-700 border-transparent text-gray-500 dark:text-gray-400 hover:bg-[#093D09]/5 dark:hover:bg-gray-600"
                     )}
                 >
                     {displayHour}
@@ -303,7 +302,7 @@ export function DateSelector({ isPickUp }: { isPickUp: boolean }) {
           <input 
               type="time" 
               {...register('deliveryTime')}
-              className="w-full h-12 px-4 border border-gray-300 rounded-xl text-center font-bold text-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className="w-full h-12 px-4 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-center font-bold text-lg focus:outline-none focus:ring-2 focus:ring-[#093D09] focus:border-transparent"
           />
         </div>
       </div>

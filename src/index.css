@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* CRITICAL FIX FOR TAILWIND V4 
+   This overrides the default system-based dark mode 
+   and forces it to check for the ".dark" class instead.
+*/
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

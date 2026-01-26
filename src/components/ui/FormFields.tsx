@@ -42,9 +42,8 @@ export const FormInput = <T extends FieldValues>({
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      {/* RESTORED: Standard Label */}
-      <label htmlFor={name} className="text-sm font-bold text-gray-700 uppercase tracking-tight">
-        {label} {required && <span className="text-orange-500">*</span>}
+      <label htmlFor={name} className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight">
+        {label} {required && <span className="text-[#093D09] dark:text-emerald-400">*</span>}
       </label>
       
       {type === 'textarea' ? (
@@ -52,9 +51,8 @@ export const FormInput = <T extends FieldValues>({
           id={name}
           {...register(name)}
           placeholder={placeholder}
-          // RESTORED: rounded-xl, standard white background
           className={cn(
-            "flex min-h-[80px] w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none",
+            "flex min-h-[80px] w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#093D09] focus:border-transparent transition-all resize-none",
             errorMessage && "border-red-500 focus:ring-red-500"
           )}
         />
@@ -67,7 +65,7 @@ export const FormInput = <T extends FieldValues>({
           onFocus={(e) => e.target.select()} 
           placeholder={placeholder}
           className={cn(
-            "flex h-12 w-full rounded-xl border border-gray-300 bg-white px-4 py-2 text-base shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50",
+            "flex h-12 w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-base text-gray-900 dark:text-white shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#093D09] focus:border-transparent placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50",
             "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
             errorMessage && "border-red-500 focus:ring-red-500"
           )}
@@ -95,15 +93,15 @@ export const FormSelect = <T extends FieldValues>({
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <label htmlFor={name} className="text-sm font-bold text-gray-700 uppercase tracking-tight">
-        {label} {required && <span className="text-orange-500">*</span>}
+      <label htmlFor={name} className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight">
+        {label} {required && <span className="text-[#093D09] dark:text-emerald-400">*</span>}
       </label>
       <div className="relative">
         <select
           id={name}
           {...register(name)}
           className={cn(
-            "flex h-12 w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-2 text-base font-medium shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50",
+            "flex h-12 w-full appearance-none rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-base text-gray-900 dark:text-white font-medium shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#093D09] focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50",
             errorMessage && "border-red-500 focus:ring-red-500"
           )}
         >
@@ -113,7 +111,7 @@ export const FormSelect = <T extends FieldValues>({
             </option>
           ))}
         </select>
-        <div className="pointer-events-none absolute right-4 top-4 opacity-50">
+        <div className="pointer-events-none absolute right-4 top-4 opacity-50 text-gray-500 dark:text-gray-300">
           <svg width="12" height="8" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
